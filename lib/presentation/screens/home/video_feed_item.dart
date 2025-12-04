@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/video_entity.dart';
 import '../../providers/video_provider.dart';
-import '../../widgets/video_player_widget.dart';
+import '../../widgets/mux_video_player_widget.dart';
 import '../../widgets/video_actions.dart';
 import '../../widgets/video_description.dart';
 
@@ -23,6 +23,7 @@ class VideoFeedItem extends StatefulWidget {
 class _VideoFeedItemState extends State<VideoFeedItem> {
   bool _hasTrackedView = false;
   double _lastProgress = 0;
+  bool _isZoomed = false;
 
   @override
   void didUpdateWidget(VideoFeedItem oldWidget) {
@@ -60,65 +61,119 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Video player
-        VideoPlayerWidget(
+        // Video player with zoom support
+        MuxVideoPlayerWidget(
           videoUrl: widget.video.videoUrl,
           isPlaying: widget.isCurrentPage,
           onProgressUpdate: _onProgressUpdate,
+          onZoomChanged: (isZoomed) {
+            setState(() {
+              _isZoomed = isZoomed;
+            });
+          },
         ),
 
-        // Gradient overlay for better text visibility
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: Container(
-            height: 300,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.8),
-                  Colors.transparent,
+        // Gradient overlay (скрывается при зуме)
+        if (!_isZoomed)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 300,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.8),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+        // Content overlay (скрывается при зуме)
+        if (!_isZoomed)
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Description
+                  Expanded(
+                    child: VideoDescription(video: widget.video),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // Actions
+                  VideoActions(
+                    video: widget.video,
+                    onLike: () {
+                      context.read<VideoProvider>().toggleLike(widget.video.id);
+                    },
+                    onComment: () {
+                      context.read<VideoProvider>().trackComment(widget.video.id);
+                      _showCommentsSheet(context);
+                    },
+                    onShare: () {
+                      context.read<VideoProvider>().trackShare(widget.video.id);
+                    },
+                  ),
                 ],
               ),
             ),
           ),
-        ),
 
-        // Content overlay
-        SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Description
-                Expanded(
-                  child: VideoDescription(video: widget.video),
-                ),
-                const SizedBox(width: 16),
-
-                // Actions
-                VideoActions(
-                  video: widget.video,
-                  onLike: () {
-                    context.read<VideoProvider>().toggleLike(widget.video.id);
-                  },
-                  onComment: () {
-                    context.read<VideoProvider>().trackComment(widget.video.id);
-                    // TODO: Open comments bottom sheet
-                    _showCommentsSheet(context);
-                  },
-                  onShare: () {
-                    context.read<VideoProvider>().trackShare(widget.video.id);
-                  },
-                ),
-              ],
+        // Hint для зума (показывается только первые 3 секунды)
+        if (!_isZoomed && widget.isCurrentPage)
+          Positioned(
+            top: 100,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 1.0, end: 0.0),
+                duration: const Duration(seconds: 3),
+                builder: (context, value, child) {
+                  if (value < 0.1) return const SizedBox.shrink();
+                  return Opacity(
+                    opacity: value,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.zoom_out_map,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Pinch to zoom video',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
-        ),
       ],
     );
   }
