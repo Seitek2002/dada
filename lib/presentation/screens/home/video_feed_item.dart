@@ -103,9 +103,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   // Description
-                  Expanded(
-                    child: VideoDescription(video: widget.video),
-                  ),
+                  Expanded(child: VideoDescription(video: widget.video)),
                   const SizedBox(width: 16),
 
                   // Actions
@@ -115,7 +113,9 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
                       context.read<VideoProvider>().toggleLike(widget.video.id);
                     },
                     onComment: () {
-                      context.read<VideoProvider>().trackComment(widget.video.id);
+                      context.read<VideoProvider>().trackComment(
+                        widget.video.id,
+                      );
                       _showCommentsSheet(context);
                     },
                     onShare: () {
@@ -161,10 +161,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
                           SizedBox(width: 8),
                           Text(
                             'Pinch to zoom video',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
+                            style: TextStyle(color: Colors.white, fontSize: 14),
                           ),
                         ],
                       ),
@@ -228,9 +225,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
                   controller: scrollController,
                   itemCount: 10,
                   itemBuilder: (context, index) => ListTile(
-                    leading: CircleAvatar(
-                      child: Text('U${index + 1}'),
-                    ),
+                    leading: CircleAvatar(child: Text('U${index + 1}')),
                     title: Text('User ${index + 1}'),
                     subtitle: const Text('This is a comment'),
                   ),
@@ -243,4 +238,3 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
     );
   }
 }
-

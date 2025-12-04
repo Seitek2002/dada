@@ -86,13 +86,19 @@ class _MuxVideoPlayerWidgetState extends State<MuxVideoPlayerWidget> {
         ),
         eventListener: (BetterPlayerEvent event) {
           if (event.betterPlayerEventType == BetterPlayerEventType.progress) {
-            final progress = _betterPlayerController?.videoPlayerController?.value.position;
-            final duration = _betterPlayerController?.videoPlayerController?.value.duration;
-            if (progress != null && duration != null && duration.inMilliseconds > 0) {
-              final percentage = (progress.inMilliseconds / duration.inMilliseconds) * 100;
+            final progress =
+                _betterPlayerController?.videoPlayerController?.value.position;
+            final duration =
+                _betterPlayerController?.videoPlayerController?.value.duration;
+            if (progress != null &&
+                duration != null &&
+                duration.inMilliseconds > 0) {
+              final percentage =
+                  (progress.inMilliseconds / duration.inMilliseconds) * 100;
               widget.onProgressUpdate?.call(percentage);
             }
-          } else if (event.betterPlayerEventType == BetterPlayerEventType.finished) {
+          } else if (event.betterPlayerEventType ==
+              BetterPlayerEventType.finished) {
             widget.onVideoEnd?.call();
           }
         },
@@ -125,7 +131,7 @@ class _MuxVideoPlayerWidgetState extends State<MuxVideoPlayerWidget> {
     setState(() {
       _scale = details.scale;
       final newIsZoomed = _scale > 1.2;
-      
+
       if (newIsZoomed != _isZoomed) {
         _isZoomed = newIsZoomed;
         widget.onZoomChanged?.call(_isZoomed);
@@ -199,9 +205,7 @@ class _MuxVideoPlayerWidgetState extends State<MuxVideoPlayerWidget> {
       return Container(
         color: Colors.black,
         child: const Center(
-          child: CircularProgressIndicator(
-            color: Colors.white,
-          ),
+          child: CircularProgressIndicator(color: Colors.white),
         ),
       );
     }
@@ -218,11 +222,8 @@ class _MuxVideoPlayerWidgetState extends State<MuxVideoPlayerWidget> {
       },
       child: Transform.scale(
         scale: _scale,
-        child: BetterPlayer(
-          controller: _betterPlayerController!,
-        ),
+        child: BetterPlayer(controller: _betterPlayerController!),
       ),
     );
   }
 }
-
