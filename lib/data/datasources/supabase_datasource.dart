@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/supabase_config.dart';
 import '../models/user_model.dart';
@@ -46,7 +47,92 @@ class SupabaseDatasource {
     return authResponse;
   }
 
-  /// Вход
+  /// Анонимный вход (для онбординга)
+  Future<AuthResponse> signInAnonymously() async {
+    final response = await _client.auth.signInAnonymously();
+
+    // Создаем анонимный профиль
+    if (response.user != null) {
+      final existingProfile = await _client
+          .from('users')
+          .select()
+          .eq('id', response.user!.id)
+          .maybeSingle();
+
+      if (existingProfile == null) {
+        await _client.from('users').insert({
+          'id': response.user!.id,
+          'username': 'user_${response.user!.id.substring(0, 8)}',
+          'display_name': 'Пользователь ${response.user!.id.substring(0, 8)}',
+          'is_anonymous': true,
+          'created_at': DateTime.now().toIso8601String(),
+        });
+      }
+    }
+
+    return response;
+  }
+
+  /// Сохранить интересы пользователя (из онбординга)
+  Future<void> saveUserInterests(List<String> categoryNames) async {
+    final userId = currentUser?.id;
+    if (userId == null) throw Exception('User not authenticated');
+
+    // Получаем ID категорий
+    final categories = await _client
+        .from('categories')
+        .select('id, name')
+        .inFilter('name', categoryNames);
+
+    // Сохраняем интересы (используем upsert для избежания дубликатов)
+    for (final category in categories) {
+      // Проверяем, существует ли уже такой интерес
+      final existing = await _client
+          .from('user_interests')
+          .select()
+          .eq('user_id', userId)
+          .eq('category_id', category['id'])
+          .maybeSingle();
+
+      if (existing == null) {
+        await _client.from('user_interests').insert({
+          'user_id': userId,
+          'category_id': category['id'],
+          'created_at': DateTime.now().toIso8601String(),
+        });
+      }
+    }
+  }
+
+  /// Сохранить минимальную желаемую зарплату
+  Future<void> saveMinSalary(int minSalary) async {
+    final userId = currentUser?.id;
+    if (userId == null) throw Exception('User not authenticated');
+
+    await _client.from('users').update({
+      'min_salary_preference': minSalary,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', userId);
+  }
+
+  /// Сохранить локацию пользователя
+  Future<void> saveUserLocation({
+    required double latitude,
+    required double longitude,
+    String? city,
+  }) async {
+    final userId = currentUser?.id;
+    if (userId == null) throw Exception('User not authenticated');
+
+    await _client.from('users').update({
+      'location_lat': latitude,
+      'location_lng': longitude,
+      'location_city': city,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', userId);
+  }
+
+  /// Вход через email (для привязки к анонимному аккаунту или нового входа)
   Future<AuthResponse> signIn({
     required String email,
     required String password,
@@ -55,6 +141,51 @@ class SupabaseDatasource {
       email: email,
       password: password,
     );
+  }
+
+  /// Отправить магическую ссылку / OTP
+  Future<void> sendMagicLink({required String email}) async {
+    await _client.auth.signInWithOtp(
+      email: email,
+      emailRedirectTo: null,
+    );
+  }
+
+  /// Подтвердить OTP и привязать к текущему анонимному аккаунту
+  Future<AuthResponse> verifyOTP({
+    required String email,
+    required String token,
+  }) async {
+    final response = await _client.auth.verifyOTP(
+      email: email,
+      token: token,
+      type: OtpType.email,
+    );
+
+    // Обновляем профиль - убираем флаг анонимности
+    if (response.user != null) {
+      await _client.from('users').update({
+        'email': email,
+        'is_anonymous': false,
+        'updated_at': DateTime.now().toIso8601String(),
+      }).eq('id', response.user!.id);
+    }
+
+    return response;
+  }
+
+  /// Проверить, анонимный ли пользователь
+  Future<bool> isAnonymousUser() async {
+    final userId = currentUser?.id;
+    if (userId == null) return false;
+
+    final profile = await _client
+        .from('users')
+        .select('is_anonymous')
+        .eq('id', userId)
+        .maybeSingle();
+
+    return profile?['is_anonymous'] ?? false;
   }
 
   /// Выход
@@ -195,6 +326,130 @@ class SupabaseDatasource {
   }
 
   // ============================================
+  // ПОСТЫ / ВАКАНСИИ
+  // ============================================
+
+  /// Получить персонализированные посты для текущего пользователя
+  Future<List<Map<String, dynamic>>> getPersonalizedFeed() async {
+    try {
+      final userId = currentUser?.id;
+      if (userId == null) {
+        // Если пользователь не авторизован, показываем все активные посты
+        final response = await _client
+            .from('posts')
+            .select('''
+              *,
+              author:users!posts_author_id_fkey(
+                id,
+                username,
+                display_name,
+                avatar_url
+              ),
+              category:categories!posts_category_id_fkey(
+                id,
+                name,
+                icon_emoji
+              )
+            ''')
+            .eq('is_published', true)
+            .eq('is_active', true)
+            .order('created_at', ascending: false)
+            .limit(20);
+
+        return List<Map<String, dynamic>>.from(response);
+      }
+
+      // Для авторизованных - используем персонализированную ленту
+      final response = await _client
+          .rpc('get_personalized_feed', params: {'p_user_id': userId});
+
+      // RPC возвращает List, преобразуем в нужный формат
+      final List<dynamic> feedData = response as List;
+      
+      // Для каждого поста получаем полную информацию
+      final List<Map<String, dynamic>> posts = [];
+      for (final item in feedData) {
+        final postId = item['post_id'];
+        final postData = await _client
+            .from('posts')
+            .select('''
+              *,
+              author:users!posts_author_id_fkey(
+                id,
+                username,
+                display_name,
+                avatar_url
+              ),
+              category:categories!posts_category_id_fkey(
+                id,
+                name,
+                icon_emoji
+              )
+            ''')
+            .eq('id', postId)
+            .eq('is_published', true)
+            .eq('is_active', true)
+            .maybeSingle();
+
+        if (postData != null) {
+          posts.add(postData);
+        }
+      }
+
+      return posts;
+    } catch (e) {
+      debugPrint('Error loading feed: $e');
+      // Fallback: просто загружаем все активные посты
+      final response = await _client
+          .from('posts')
+          .select('''
+            *,
+            author:users!posts_author_id_fkey(
+              id,
+              username,
+              display_name,
+              avatar_url
+            ),
+            category:categories!posts_category_id_fkey(
+              id,
+              name,
+              icon_emoji
+            )
+          ''')
+          .eq('is_published', true)
+          .eq('is_active', true)
+          .order('created_at', ascending: false)
+          .limit(20);
+
+      return List<Map<String, dynamic>>.from(response);
+    }
+  }
+
+  /// Получить один пост по ID
+  Future<Map<String, dynamic>?> getPostById(String postId) async {
+    final response = await _client
+        .from('posts')
+        .select('''
+          *,
+          author:users!posts_author_id_fkey(
+            id,
+            username,
+            display_name,
+            avatar_url
+          ),
+          category:categories!posts_category_id_fkey(
+            id,
+            name,
+            icon_emoji
+          )
+        ''')
+        .eq('id', postId)
+        .maybeSingle();
+
+    return response;
+  }
+
+  // ============================================
   // ЛАЙКИ
   // ============================================
 
@@ -252,10 +507,9 @@ class SupabaseDatasource {
         .from('comments')
         .select('''
           *,
-          author:users(*)
+          author:users!comments_author_id_fkey(*)
         ''')
         .eq('post_id', postId)
-        .isFilter('parent_comment_id', null)
         .order('created_at', ascending: false);
 
     return List<Map<String, dynamic>>.from(response);
@@ -271,6 +525,66 @@ class SupabaseDatasource {
       'author_id': userId,
       'text': text,
     });
+  }
+
+  // ============================================
+  // ОТКЛИКИ НА ВАКАНСИИ
+  // ============================================
+
+  /// Откликнуться на вакансию
+  Future<void> applyToJob(String postId) async {
+    final userId = currentUser?.id;
+    if (userId == null) throw Exception('User not authenticated');
+
+    // Проверяем, не откликался ли уже пользователь
+    final existingApplication = await _client
+        .from('job_applications')
+        .select()
+        .eq('user_id', userId)
+        .eq('post_id', postId)
+        .maybeSingle();
+
+    if (existingApplication != null) {
+      throw Exception('Вы уже откликнулись на эту вакансию');
+    }
+
+    // Создаем отклик
+    await _client.from('job_applications').insert({
+      'user_id': userId,
+      'post_id': postId,
+      'status': 'pending',
+      'created_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  /// Проверить откликался ли пользователь на вакансию
+  Future<bool> hasAppliedToJob(String postId) async {
+    final userId = currentUser?.id;
+    if (userId == null) return false;
+
+    final application = await _client
+        .from('job_applications')
+        .select()
+        .eq('user_id', userId)
+        .eq('post_id', postId)
+        .maybeSingle();
+
+    return application != null;
+  }
+
+  /// Получить статус отклика
+  Future<String?> getApplicationStatus(String postId) async {
+    final userId = currentUser?.id;
+    if (userId == null) return null;
+
+    final application = await _client
+        .from('job_applications')
+        .select('status')
+        .eq('user_id', userId)
+        .eq('post_id', postId)
+        .maybeSingle();
+
+    return application?['status'];
   }
 
   // ============================================

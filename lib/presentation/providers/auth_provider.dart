@@ -74,7 +74,83 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  /// Вход
+  /// Анонимный вход (для онбординга)
+  Future<bool> signInAnonymously() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _datasource.signInAnonymously();
+      _currentUser = response.user;
+      await _loadUserProfile();
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error in signInAnonymously: $e');
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Сохранить интересы из онбординга
+  Future<bool> saveInterests(List<String> categoryNames) async {
+    try {
+      await _datasource.saveUserInterests(categoryNames);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Сохранить минимальную зарплату из онбординга
+  Future<bool> saveMinSalary(int minSalary) async {
+    try {
+      await _datasource.saveMinSalary(minSalary);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Сохранить локацию пользователя
+  Future<bool> saveLocation({
+    required double latitude,
+    required double longitude,
+    String? city,
+  }) async {
+    try {
+      await _datasource.saveUserLocation(
+        latitude: latitude,
+        longitude: longitude,
+        city: city,
+      );
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Проверить, анонимный ли пользователь
+  Future<bool> isAnonymous() async {
+    try {
+      return await _datasource.isAnonymousUser();
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Вход через email/пароль
   Future<bool> signIn({
     required String email,
     required String password,
@@ -87,6 +163,55 @@ class AuthProvider with ChangeNotifier {
       final response = await _datasource.signIn(
         email: email,
         password: password,
+      );
+
+      _currentUser = response.user;
+      await _loadUserProfile();
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Отправить магическую ссылку / OTP
+  Future<bool> sendMagicLink({required String email}) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _datasource.sendMagicLink(email: email);
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Подтвердить OTP
+  Future<bool> verifyOTP({
+    required String email,
+    required String token,
+  }) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _datasource.verifyOTP(
+        email: email,
+        token: token,
       );
 
       _currentUser = response.user;

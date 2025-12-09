@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/constants/app_colors.dart';
-import '../auth/login_screen.dart';
+import 'video_explanation_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -40,13 +39,6 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _controller.forward();
-
-    // Navigate to auth or onboarding after animation
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        _showAuthChoice();
-      }
-    });
   }
 
   @override
@@ -55,12 +47,12 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
-  void _showAuthChoice() {
+  void _startOnboarding() {
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const LoginScreen(),
+            const VideoExplanationScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -73,52 +65,91 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Center(
+      body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: ScaleTransition(
             scale: _scaleAnimation,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // TikTok logo
-                SvgPicture.asset(
-                  'assets/tiktok-logo.svg',
-                  width: 100,
-                  height: 100,
-                ),
-                const SizedBox(height: 24),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Spacer(flex: 2),
 
-                // App name with gradient
-                ShaderMask(
-                  shaderCallback: (bounds) => const LinearGradient(
-                    colors: [
-                      Color(0xFF00F2EA),
-                      Color(0xFFFF0050),
-                    ],
-                  ).createShader(bounds),
-                  child: const Text(
-                    'TikTok',
-                    style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  // DaDa! Logo
+                  ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [
+                        Color(0xFF00F2EA),
+                        Color(0xFFFF0050),
+                      ],
+                    ).createShader(bounds),
+                    child: const Text(
+                      'DaDa!',
+                      style: TextStyle(
+                        fontSize: 64,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 8),
+                  const SizedBox(height: 24),
 
-                // Tagline
-                const Text(
-                  'Make Your Day',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 16,
-                    letterSpacing: 1.5,
+                  // Slogan
+                  const Text(
+                    'Работа, которая ближе,\nчем сторис',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                      height: 1.4,
+                    ),
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 16),
+
+                  // Description
+                  const Text(
+                    'Поиск работы в формате коротких видео',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+
+                  const Spacer(flex: 3),
+
+                  // Start Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: _startOnboarding,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Начать',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+                ],
+              ),
             ),
           ),
         ),

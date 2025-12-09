@@ -33,7 +33,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Discover'),
+        title: const Text('Поиск'),
         backgroundColor: AppColors.background,
       ),
       body: Column(
@@ -45,7 +45,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               controller: _searchController,
               style: const TextStyle(color: AppColors.textPrimary),
               decoration: InputDecoration(
-                hintText: 'Search users, videos, sounds...',
+                hintText: 'Поиск вакансий, компаний...',
                 hintStyle: const TextStyle(color: AppColors.textSecondary),
                 prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
                 filled: true,
@@ -70,7 +70,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Text(
-                      'Trending Hashtags',
+                      'Популярные вакансии',
                       style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 18,
@@ -104,7 +104,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                           ),
                         ),
                         subtitle: Text(
-                          '${(index + 1) * 1.2}M views',
+                          '${(index + 1) * 1.2}М просмотров',
                           style: const TextStyle(color: AppColors.textSecondary),
                         ),
                         trailing: const Icon(

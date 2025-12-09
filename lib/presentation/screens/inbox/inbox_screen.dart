@@ -9,7 +9,7 @@ class InboxScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Inbox'),
+        title: const Text('Сообщения'),
         backgroundColor: AppColors.background,
         actions: [
           IconButton(
@@ -32,14 +32,14 @@ class InboxScreen extends StatelessWidget {
               ),
             ),
             title: Text(
-              'User ${index + 1}',
+              'Пользователь ${index + 1}',
               style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w600,
               ),
             ),
             subtitle: Text(
-              'Last message preview...',
+              'Последнее сообщение...',
               style: const TextStyle(color: AppColors.textSecondary),
             ),
             trailing: Column(

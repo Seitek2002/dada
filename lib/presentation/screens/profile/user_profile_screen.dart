@@ -2,21 +2,13 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../domain/entities/user_entity.dart';
 
-class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+class UserProfileScreen extends StatelessWidget {
+  final UserEntity user;
 
-  // Mock current user
-  static const UserEntity _currentUser = UserEntity(
-    id: 'current',
-    username: 'myusername',
-    displayName: 'My Display Name',
-    avatarUrl: 'https://api.dicebear.com/7.x/avataaars/png?seed=current',
-    bio: 'Welcome to my profile! 🎉\nContent creator | Dancer | Musician',
-    followersCount: 125000,
-    followingCount: 450,
-    likesCount: 2500000,
-    isVerified: false,
-  );
+  const UserProfileScreen({
+    super.key,
+    required this.user,
+  });
 
   String _formatCount(int count) {
     if (count >= 1000000) {
@@ -37,14 +29,14 @@ class ProfileScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '@${_currentUser.username}',
+              '@${user.username}',
               style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            if (_currentUser.isVerified) ...[
+            if (user.isVerified) ...[
               const SizedBox(width: 4),
               const Icon(
                 Icons.verified,
@@ -54,14 +46,10 @@ class ProfileScreen extends StatelessWidget {
             ],
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.menu, color: AppColors.textPrimary),
-            onPressed: () {
-              // TODO: Show menu
-            },
-          ),
-        ],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -75,14 +63,14 @@ class ProfileScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.textSecondary, width: 2),
-                image: _currentUser.avatarUrl != null
+                image: user.avatarUrl != null
                     ? DecorationImage(
-                        image: NetworkImage(_currentUser.avatarUrl!),
+                        image: NetworkImage(user.avatarUrl!),
                         fit: BoxFit.cover,
                       )
                     : null,
               ),
-              child: _currentUser.avatarUrl == null
+              child: user.avatarUrl == null
                   ? const Icon(Icons.person, size: 48, color: AppColors.textPrimary)
                   : null,
             ),
@@ -91,7 +79,7 @@ class ProfileScreen extends StatelessWidget {
 
             // Display name
             Text(
-              _currentUser.displayName,
+              user.displayName,
               style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 20,
@@ -106,19 +94,19 @@ class ProfileScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _StatItem(
-                  count: _formatCount(_currentUser.followingCount),
+                  count: _formatCount(user.followingCount),
                   label: 'Подписки',
                   onTap: () {},
                 ),
                 const SizedBox(width: 32),
                 _StatItem(
-                  count: _formatCount(_currentUser.followersCount),
+                  count: _formatCount(user.followersCount),
                   label: 'Подписчики',
                   onTap: () {},
                 ),
                 const SizedBox(width: 32),
                 _StatItem(
-                  count: _formatCount(_currentUser.likesCount),
+                  count: _formatCount(user.likesCount),
                   label: 'Лайки',
                   onTap: () {},
                 ),
@@ -135,26 +123,26 @@ class ProfileScreen extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        // TODO: Edit profile
+                        // TODO: Follow/Unfollow
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.surfaceLight,
-                        foregroundColor: AppColors.textPrimary,
+                        backgroundColor: const Color(0xFF25F4EE),
+                        foregroundColor: Colors.black,
                       ),
-                      child: const Text('Редактировать'),
+                      child: const Text('Подписаться'),
                     ),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: () {
-                      // TODO: Share profile
+                      // TODO: Message
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.surfaceLight,
                       foregroundColor: AppColors.textPrimary,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                     ),
-                    child: const Icon(Icons.share),
+                    child: const Icon(Icons.message),
                   ),
                 ],
               ),
@@ -163,11 +151,11 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Bio
-            if (_currentUser.bio != null)
+            if (user.bio != null)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  _currentUser.bio!,
+                  user.bio!,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: AppColors.textSecondary,
@@ -180,7 +168,7 @@ class ProfileScreen extends StatelessWidget {
 
             // Tabs
             DefaultTabController(
-              length: 2,
+              length: 1,
               child: Column(
                 children: [
                   TabBar(
@@ -188,8 +176,10 @@ class ProfileScreen extends StatelessWidget {
                     labelColor: AppColors.textPrimary,
                     unselectedLabelColor: AppColors.textSecondary,
                     tabs: const [
-                      Tab(icon: Icon(Icons.grid_on)),
-                      Tab(icon: Icon(Icons.favorite_border)),
+                      Tab(
+                        icon: Icon(Icons.grid_on),
+                        text: 'Вакансии',
+                      ),
                     ],
                   ),
                   SizedBox(
@@ -205,7 +195,7 @@ class ProfileScreen extends StatelessWidget {
                             mainAxisSpacing: 2,
                             childAspectRatio: 9 / 16,
                           ),
-                          itemCount: 12,
+                          itemCount: 9,
                           itemBuilder: (context, index) {
                             return Container(
                               color: AppColors.surfaceLight,
@@ -244,13 +234,6 @@ class ProfileScreen extends StatelessWidget {
                               ),
                             );
                           },
-                        ),
-                        // Liked videos
-                        const Center(
-                          child: Text(
-                            'Понравившиеся видео',
-                            style: TextStyle(color: AppColors.textSecondary),
-                          ),
                         ),
                       ],
                     ),

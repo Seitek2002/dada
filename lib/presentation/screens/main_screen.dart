@@ -14,16 +14,35 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    DiscoverScreen(),
-    CreateScreen(),
-    InboxScreen(),
-    ProfileScreen(),
+  List<Widget> get _screens => [
+    HomeScreen(isActive: _currentIndex == 0),
+    const DiscoverScreen(),
+    const CreateScreen(),
+    const InboxScreen(),
+    const ProfileScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Эта функция будет вызываться при изменении состояния приложения
+    // (например, при сворачивании или переключении вкладок)
+    super.didChangeAppLifecycleState(state);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,11 +78,11 @@ class _MainScreenState extends State<MainScreen> {
           items: [
             BottomNavigationBarItem(
               icon: _buildIcon('assets/icons/home.svg', 0),
-              label: 'Home',
+              label: 'Главная',
             ),
             BottomNavigationBarItem(
               icon: _buildIcon('assets/icons/discover.svg', 1),
-              label: 'Discover',
+              label: 'Поиск',
             ),
             BottomNavigationBarItem(
               icon: _buildAddIcon(),
@@ -71,11 +90,11 @@ class _MainScreenState extends State<MainScreen> {
             ),
             BottomNavigationBarItem(
               icon: _buildIcon('assets/icons/inbox.svg', 3),
-              label: 'Inbox',
+              label: 'Сообщения',
             ),
             BottomNavigationBarItem(
               icon: _buildIcon('assets/icons/profile.svg', 4),
-              label: 'Profile',
+              label: 'Профиль',
             ),
           ],
         ),

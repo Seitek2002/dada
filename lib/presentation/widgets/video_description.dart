@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../domain/entities/video_entity.dart';
+import '../providers/post_provider.dart';
 
 class VideoDescription extends StatefulWidget {
   final VideoEntity video;
@@ -16,6 +18,50 @@ class VideoDescription extends StatefulWidget {
 
 class _VideoDescriptionState extends State<VideoDescription> {
   bool _isExpanded = false;
+  bool _hasApplied = false;
+  bool _isApplying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkApplicationStatus();
+  }
+
+  Future<void> _checkApplicationStatus() async {
+    final hasApplied = await context.read<PostProvider>().hasAppliedToJob(widget.video.id);
+    if (mounted) {
+      setState(() {
+        _hasApplied = hasApplied;
+      });
+    }
+  }
+
+  Future<void> _applyToJob() async {
+    setState(() {
+      _isApplying = true;
+    });
+
+    final success = await context.read<PostProvider>().applyToJob(widget.video.id);
+
+    if (mounted) {
+      setState(() {
+        _isApplying = false;
+        if (success) {
+          _hasApplied = true;
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success ? '✅ Отклик отправлен!' : '❌ Ошибка отправки отклика',
+          ),
+          backgroundColor: success ? Colors.green : Colors.red,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +142,7 @@ class _VideoDescriptionState extends State<VideoDescription> {
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  '${widget.video.musicName} - ${widget.video.musicAuthor ?? 'Unknown'}',
+                  '${widget.video.musicName} - ${widget.video.musicAuthor ?? 'Неизвестно'}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -108,6 +154,53 @@ class _VideoDescriptionState extends State<VideoDescription> {
             ],
           ),
         ],
+
+        // Кнопка "Откликнуться"
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton(
+            onPressed: _hasApplied || _isApplying ? null : _applyToJob,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _hasApplied 
+                  ? Colors.grey.shade800 
+                  : const Color(0xFF25F4EE),
+              foregroundColor: _hasApplied ? Colors.grey : Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              disabledBackgroundColor: Colors.grey.shade800,
+              disabledForegroundColor: Colors.grey,
+            ),
+            child: _isApplying
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _hasApplied ? Icons.check_circle : Icons.work,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _hasApplied ? 'Вы откликнулись' : 'Откликнуться',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
       ],
     );
   }

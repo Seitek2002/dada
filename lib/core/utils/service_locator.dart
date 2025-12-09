@@ -4,9 +4,10 @@ import '../../data/repositories/video_repository_impl.dart';
 import '../../domain/repositories/video_repository.dart';
 import '../../presentation/providers/video_provider.dart';
 import '../../presentation/providers/auth_provider.dart';
+import '../../presentation/providers/post_provider.dart';
 
 /// Service Locator для Dependency Injection
-/// 
+///
 /// Управляет всеми зависимостями приложения
 class ServiceLocator {
   static final ServiceLocator _instance = ServiceLocator._internal();
@@ -21,8 +22,9 @@ class ServiceLocator {
   late final VideoRepository _videoRepository;
 
   // Providers
-  late final VideoProvider _videoProvider;
+  VideoProvider? _videoProvider;
   late final AuthProvider _authProvider;
+  late final PostProvider _postProvider;
 
   // Configuration
   bool _useRemoteData = false;
@@ -31,23 +33,34 @@ class ServiceLocator {
     _useRemoteData = useRemoteData;
 
     // Initialize datasources
-    _localDatasource = LocalVideoDatasource();
     _supabaseDatasource = SupabaseDatasource();
 
-    // Initialize repository
-    _videoRepository = VideoRepositoryImpl(
-      _useRemoteData ? _supabaseDatasource as dynamic : _localDatasource,
-    );
+    if (!_useRemoteData) {
+      // Локальный режим - используем VideoProvider
+      _localDatasource = LocalVideoDatasource();
+      _videoRepository = VideoRepositoryImpl(_localDatasource);
+      _videoProvider = VideoProvider(_videoRepository);
+    } else {
+      // Supabase режим - используем только PostProvider
+      _videoProvider = null;
+    }
 
-    // Initialize providers
-    _videoProvider = VideoProvider(_videoRepository);
+    // Initialize providers (работают в обоих режимах)
     _authProvider = AuthProvider(_supabaseDatasource);
+    _postProvider = PostProvider(_supabaseDatasource);
   }
 
   // Getters
-  VideoProvider get videoProvider => _videoProvider;
+  VideoProvider get videoProvider {
+    if (_videoProvider == null) {
+      throw Exception('VideoProvider доступен только в локальном режиме');
+    }
+    return _videoProvider!;
+  }
+
   VideoRepository get videoRepository => _videoRepository;
   AuthProvider get authProvider => _authProvider;
+  PostProvider get postProvider => _postProvider;
   SupabaseDatasource get supabaseDatasource => _supabaseDatasource;
 
   /// Переключить на Supabase данные
@@ -63,4 +76,3 @@ class ServiceLocator {
     init(useRemoteData: false);
   }
 }
-

@@ -6,8 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/service_locator.dart';
 import 'core/constants/supabase_config.dart';
-import 'presentation/screens/main_screen.dart';
 import 'presentation/screens/onboarding/splash_screen.dart';
+import 'presentation/screens/main_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,33 +29,66 @@ void main() async {
   );
 
   // Initialize service locator
-  ServiceLocator().init(useRemoteData: false); // Используем локальные данные
+  ServiceLocator().init(useRemoteData: true); // Используем Supabase
 
-  // Check if first launch
-  final prefs = await SharedPreferences.getInstance();
-  final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
-
-  runApp(MyApp(showOnboarding: !hasSeenOnboarding));
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  final bool showOnboarding;
-
-  const MyApp({super.key, required this.showOnboarding});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ServiceLocator().videoProvider),
         ChangeNotifierProvider(create: (_) => ServiceLocator().authProvider),
+        ChangeNotifierProvider(create: (_) => ServiceLocator().postProvider),
       ],
       child: MaterialApp(
-        title: 'TikTok Clone',
+        title: 'DaDa!',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
-        home: showOnboarding ? const SplashScreen() : const MainScreen(),
+        home: const InitialScreen(),
       ),
     );
+  }
+}
+
+class InitialScreen extends StatefulWidget {
+  const InitialScreen({super.key});
+
+  @override
+  State<InitialScreen> createState() => _InitialScreenState();
+}
+
+class _InitialScreenState extends State<InitialScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _checkOnboardingStatus(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final hasSeenOnboarding = snapshot.data ?? false;
+
+        // Если пользователь прошел онбординг - показываем главный экран
+        // (Supabase автоматически сохраняет сессию)
+        if (hasSeenOnboarding) {
+          return const MainScreen();
+        }
+
+        // Иначе - показываем splash и онбординг
+        return const SplashScreen();
+      },
+    );
+  }
+
+  Future<bool> _checkOnboardingStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('has_seen_onboarding') ?? false;
   }
 }

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../main_screen.dart';
-import 'signup_screen.dart';
+import 'code_verification_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,37 +15,56 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
+  String? _emailError;
 
   @override
   void dispose() {
     _emailController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
+  bool _isValidEmail(String email) {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email);
+  }
+
+  Future<void> _sendCode() async {
+    final email = _emailController.text.trim();
+
+    if (email.isEmpty) {
+      setState(() {
+        _emailError = 'Введите адрес электронной почты';
+      });
+      return;
+    }
+
+    if (!_isValidEmail(email)) {
+      setState(() {
+        _emailError = 'Похоже, тут опечатка. Проверь адрес почты';
+      });
+      return;
+    }
+
+    setState(() {
+      _emailError = null;
+    });
 
     final authProvider = context.read<AuthProvider>();
-    
-    final success = await authProvider.signIn(
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-    );
+
+    // Send magic link/OTP
+    final success = await authProvider.sendMagicLink(email: email);
 
     if (!mounted) return;
 
     if (success) {
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const MainScreen()),
+        MaterialPageRoute(builder: (_) => CodeVerificationScreen(email: email)),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.error ?? 'Login failed'),
+          content: Text(authProvider.error ?? 'Не удалось отправить код'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -56,49 +75,39 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(32),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 40),
-
-                // Logo
-                Center(
-                  child: ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [Color(0xFF00F2EA), Color(0xFFFF0050)],
-                    ).createShader(bounds),
-                    child: const Text(
-                      'TikTok',
-                      style: TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 60),
+                const SizedBox(height: 20),
 
                 // Title
                 const Text(
-                  'Welcome back',
+                  'Вход или регистрация',
                   style: TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 32,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
 
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
 
+                // Subtitle
                 const Text(
-                  'Sign in to continue',
+                  'Без пароля, просто код на почту',
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 16,
@@ -113,90 +122,60 @@ class _LoginScreenState extends State<LoginScreen> {
                   keyboardType: TextInputType.emailAddress,
                   style: const TextStyle(color: AppColors.textPrimary),
                   decoration: InputDecoration(
-                    labelText: 'Email',
-                    labelStyle: const TextStyle(color: AppColors.textSecondary),
+                    hintText: 'Твоя электронная почта',
+                    hintStyle: const TextStyle(color: AppColors.textSecondary),
                     filled: true,
                     fillColor: AppColors.surfaceLight,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.error),
                     ),
                     prefixIcon: const Icon(
                       Icons.email_outlined,
                       color: AppColors.textSecondary,
                     ),
+                    errorText: _emailError,
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter email';
+                  onChanged: (value) {
+                    if (_emailError != null) {
+                      setState(() {
+                        _emailError = null;
+                      });
                     }
-                    if (!value.contains('@')) {
-                      return 'Please enter valid email';
-                    }
-                    return null;
                   },
                 ),
 
                 const SizedBox(height: 16),
 
-                // Password field
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    labelStyle: const TextStyle(color: AppColors.textSecondary),
-                    filled: true,
-                    fillColor: AppColors.surfaceLight,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
-                    ),
-                    prefixIcon: const Icon(
-                      Icons.lock_outlined,
-                      color: AppColors.textSecondary,
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        color: AppColors.textSecondary,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
+                // Helper text
+                const Text(
+                  'Отправим одноразовый код, чтобы подтвердить, что это твоя почта',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter password';
-                    }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
-                    return null;
-                  },
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 40),
 
-                // Login button
+                // Send code button
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, _) {
                     return SizedBox(
                       width: double.infinity,
-                      height: 54,
+                      height: 56,
                       child: ElevatedButton(
-                        onPressed: authProvider.isLoading ? null : _login,
+                        onPressed: authProvider.isLoading ? null : _sendCode,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          elevation: 0,
                         ),
                         child: authProvider.isLoading
                             ? const SizedBox(
@@ -208,9 +187,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               )
                             : const Text(
-                                'Sign In',
+                                'Получить код',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.white,
                                 ),
@@ -220,54 +199,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                 ),
 
-                const SizedBox(height: 24),
-
-                // Sign up link
-                Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        "Don't have an account? ",
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SignupScreen(),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          'Sign Up',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
+                const SizedBox(height: 40),
 
                 // Divider
                 Row(
                   children: [
-                    Expanded(
+                    const Expanded(
                       child: Divider(color: AppColors.textTertiary),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        'or continue with',
+                        'или',
                         style: TextStyle(color: AppColors.textSecondary),
                       ),
                     ),
-                    Expanded(
+                    const Expanded(
                       child: Divider(color: AppColors.textTertiary),
                     ),
                   ],
@@ -279,13 +226,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 Center(
                   child: TextButton(
                     onPressed: () {
+                      // TODO: В будущем здесь можно будет отметить onboarding как завершенный
+                      // final prefs = await SharedPreferences.getInstance();
+                      // await prefs.setBool('has_seen_onboarding', true);
+
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(builder: (_) => const MainScreen()),
                       );
                     },
                     child: const Text(
-                      'Skip for now (use mock data)',
+                      'Пропустить (использовать тестовые данные)',
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 14,
@@ -301,4 +252,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

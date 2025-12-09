@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:share_plus/share_plus.dart' as share_plus;
 import '../../core/constants/app_colors.dart';
 import '../../domain/entities/video_entity.dart';
+import '../screens/profile/user_profile_screen.dart';
 
 class VideoActions extends StatelessWidget {
   final VideoEntity video;
@@ -37,7 +38,12 @@ class VideoActions extends StatelessWidget {
         // Avatar
         GestureDetector(
           onTap: () {
-            // TODO: Navigate to profile
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => UserProfileScreen(user: video.author),
+              ),
+            );
           },
           child: Container(
             width: 48,
@@ -84,8 +90,8 @@ class VideoActions extends StatelessWidget {
             onShare();
             // ignore: deprecated_member_use
             await share_plus.Share.share(
-              'Check out this video on TikTok! ${video.description}',
-              subject: 'TikTok Video',
+              'Посмотри эту вакансию в DaDa! ${video.description}',
+              subject: 'Вакансия DaDa',
             );
           },
         ),

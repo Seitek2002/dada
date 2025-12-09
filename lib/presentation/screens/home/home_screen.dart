@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/video_provider.dart';
+import '../../providers/post_provider.dart';
 import 'video_feed_item.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final bool isActive;
+  
+  const HomeScreen({super.key, this.isActive = true});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -17,9 +19,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Load videos when screen initializes
+    // Load posts when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<VideoProvider>().loadVideos();
+      context.read<PostProvider>().loadPosts();
     });
   }
 
@@ -44,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // TODO: Show following feed
               },
               child: const Text(
-                'Following',
+                'Избранное',
                 style: TextStyle(
                   color: Colors.white70,
                   fontSize: 16,
@@ -63,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Already on For You
               },
               child: const Text(
-                'For You',
+                'Для тебя',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -82,15 +84,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Consumer<VideoProvider>(
-        builder: (context, videoProvider, child) {
-          if (videoProvider.isLoading) {
+      body: Consumer<PostProvider>(
+        builder: (context, postProvider, child) {
+          if (postProvider.isLoading) {
             return const Center(
               child: CircularProgressIndicator(color: Colors.white),
             );
           }
 
-          if (videoProvider.error != null) {
+          if (postProvider.error != null) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -98,23 +100,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Icon(Icons.error_outline, color: Colors.white, size: 48),
                   const SizedBox(height: 16),
                   Text(
-                    'Error: ${videoProvider.error}',
+                    'Ошибка: ${postProvider.error}',
                     style: const TextStyle(color: Colors.white),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => videoProvider.loadVideos(),
-                    child: const Text('Retry'),
+                    onPressed: () => postProvider.loadPosts(),
+                    child: const Text('Повторить'),
                   ),
                 ],
               ),
             );
           }
 
-          if (videoProvider.videos.isEmpty) {
+          if (postProvider.posts.isEmpty) {
             return const Center(
               child: Text(
-                'No videos available',
+                'Нет доступных вакансий',
                 style: TextStyle(color: Colors.white),
               ),
             );
@@ -123,16 +126,19 @@ class _HomeScreenState extends State<HomeScreen> {
           return PageView.builder(
             controller: _pageController,
             scrollDirection: Axis.vertical,
-            itemCount: videoProvider.videos.length,
+            itemCount: postProvider.posts.length,
             onPageChanged: (index) {
               setState(() {
                 _currentPage = index;
               });
+              
+              // Предзагружаем следующие видео при переключении
+              postProvider.preloadNextVideos(index);
             },
             itemBuilder: (context, index) {
               return VideoFeedItem(
-                video: videoProvider.videos[index],
-                isCurrentPage: index == _currentPage,
+                video: postProvider.posts[index],
+                isCurrentPage: index == _currentPage && widget.isActive,
               );
             },
           );
