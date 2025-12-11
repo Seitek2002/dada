@@ -20,6 +20,7 @@ dependencies:
   shared_preferences: ^2.5.3
   supabase_flutter: ^2.10.3
   flutter_cache_manager: ^3.4.1
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:

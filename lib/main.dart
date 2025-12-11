@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/service_locator.dart';
 import 'core/constants/supabase_config.dart';
-import 'presentation/screens/onboarding/splash_screen.dart';
+import 'presentation/screens/onboarding/new_splash_screen.dart';
 import 'presentation/screens/main_screen.dart';
 
 void main() async {
@@ -81,8 +81,8 @@ class _InitialScreenState extends State<InitialScreen> {
           return const MainScreen();
         }
 
-        // Иначе - показываем splash и онбординг
-        return const SplashScreen();
+        // Иначе - показываем новый splash и онбординг
+        return const NewSplashScreen();
       },
     );
   }

@@ -9,6 +9,8 @@ class MuxVideoPlayerWidget extends StatefulWidget {
   final Function(double)? onProgressUpdate;
   final VoidCallback? onVideoEnd;
   final Function(bool)? onZoomChanged;
+  final Function(Duration position, Duration duration)? onPositionUpdate;
+  final Function(VideoPlayerController?)? onControllerReady;
 
   const MuxVideoPlayerWidget({
     super.key,
@@ -17,6 +19,8 @@ class MuxVideoPlayerWidget extends StatefulWidget {
     this.onProgressUpdate,
     this.onVideoEnd,
     this.onZoomChanged,
+    this.onPositionUpdate,
+    this.onControllerReady,
   });
 
   @override
@@ -80,6 +84,8 @@ class _MuxVideoPlayerWidgetState extends State<MuxVideoPlayerWidget> {
         setState(() {
           _isInitialized = true;
         });
+        // Передаем контроллер наружу
+        widget.onControllerReady?.call(_controller);
       }
     } catch (e) {
       debugPrint('Error initializing video: $e');
@@ -87,6 +93,7 @@ class _MuxVideoPlayerWidgetState extends State<MuxVideoPlayerWidget> {
         setState(() {
           _hasError = true;
         });
+        widget.onControllerReady?.call(null);
       }
     }
   }
@@ -101,6 +108,7 @@ class _MuxVideoPlayerWidgetState extends State<MuxVideoPlayerWidget> {
       final percentage =
           (position.inMilliseconds / duration.inMilliseconds) * 100;
       widget.onProgressUpdate?.call(percentage);
+      widget.onPositionUpdate?.call(position, duration);
 
       // Check if video ended - restart it
       if (position >= duration && duration.inMilliseconds > 0) {

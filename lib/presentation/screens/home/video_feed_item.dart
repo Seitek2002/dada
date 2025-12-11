@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:video_player/video_player.dart';
 import '../../../domain/entities/video_entity.dart';
 import '../../providers/post_provider.dart';
 import '../../widgets/mux_video_player_widget.dart';
 import '../../widgets/video_actions.dart';
 import '../../widgets/video_description.dart';
 import '../../widgets/comments_sheet.dart';
+import '../../widgets/video_progress_bar.dart';
 
 class VideoFeedItem extends StatefulWidget {
   final VideoEntity video;
@@ -25,6 +27,9 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
   bool _hasTrackedView = false;
   double _lastProgress = 0;
   bool _isZoomed = false;
+  Duration _position = Duration.zero;
+  Duration _duration = Duration.zero;
+  VideoPlayerController? _videoController;
 
   @override
   void didUpdateWidget(VideoFeedItem oldWidget) {
@@ -67,9 +72,20 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
           videoUrl: widget.video.videoUrl,
           isPlaying: widget.isCurrentPage,
           onProgressUpdate: _onProgressUpdate,
+          onPositionUpdate: (position, duration) {
+            setState(() {
+              _position = position;
+              _duration = duration;
+            });
+          },
           onZoomChanged: (isZoomed) {
             setState(() {
               _isZoomed = isZoomed;
+            });
+          },
+          onControllerReady: (controller) {
+            setState(() {
+              _videoController = controller;
             });
           },
         ),
@@ -168,6 +184,25 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
                       ),
                     ),
                   );
+                },
+              ),
+            ),
+          ),
+
+        // Ползунок прогресса видео (скрывается при зуме)
+        // Расположен максимально низко, частично под navbar
+        if (!_isZoomed && _duration.inMilliseconds > 0)
+          Positioned(
+            bottom: -20, // Отрицательный отступ - частично под navbar!
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: VideoProgressBar(
+                position: _position,
+                duration: _duration,
+                onSeek: (position) {
+                  _videoController?.seekTo(position);
                 },
               ),
             ),

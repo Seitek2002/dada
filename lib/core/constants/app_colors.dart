@@ -6,6 +6,13 @@ class AppColors {
   static const Color secondary = Color(0xFF25F4EE);
   static const Color accent = Color(0xFFFFFFFF);
   
+  // DaDa! Onboarding colors (из Figma)
+  static const Color buttonYellow = Color(0xFFFFCF00); // Желтая кнопка
+  static const Color black = Color(0xFF000000); // Черный текст
+  static const Color white = Color(0xFFFFFFFF); // Белый текст
+  static const Color greyLight = Color(0xFFF5F5F5); // Светло-серый фон
+  static const Color greyDark = Color(0xFF666666); // Темно-серый текст
+  
   // Background colors
   static const Color background = Color(0xFF000000);
   static const Color surface = Color(0xFF121212);

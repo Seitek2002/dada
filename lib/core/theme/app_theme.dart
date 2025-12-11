@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
 
 class AppTheme {
@@ -9,7 +10,8 @@ class AppTheme {
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.background,
       primaryColor: AppColors.primary,
-      fontFamily: 'TikTokFont',
+      fontFamily: GoogleFonts.montserrat().fontFamily,
+      textTheme: GoogleFonts.montserratTextTheme(),
       
       // AppBar theme
       appBarTheme: const AppBarTheme(
@@ -31,47 +33,6 @@ class AppTheme {
         unselectedItemColor: AppColors.textSecondary,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-      ),
-      
-      // Text theme
-      textTheme: const TextTheme(
-        displayLarge: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
-        ),
-        displayMedium: TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
-        ),
-        displaySmall: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary,
-        ),
-        headlineMedium: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
-        ),
-        titleLarge: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
-        ),
-        bodyLarge: TextStyle(
-          fontSize: 16,
-          color: AppColors.textPrimary,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 14,
-          color: AppColors.textSecondary,
-        ),
-        bodySmall: TextStyle(
-          fontSize: 12,
-          color: AppColors.textTertiary,
-        ),
       ),
       
       // Icon theme
