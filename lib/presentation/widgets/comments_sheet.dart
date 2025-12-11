@@ -136,17 +136,29 @@ class _CommentsSheetState extends State<CommentsSheet> {
             // Comments list
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? ListView(
+                      controller: scrollController,
+                      children: const [
+                        SizedBox(height: 200),
+                        Center(child: CircularProgressIndicator()),
+                      ],
+                    )
                   : _comments.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'Пока нет комментариев.\nБудьте первым!',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 14,
+                      ? ListView(
+                          controller: scrollController,
+                          children: const [
+                            SizedBox(height: 200),
+                            Center(
+                              child: Text(
+                                'Пока нет комментариев.\nБудьте первым!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 14,
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         )
                       : ListView.builder(
                           controller: scrollController,
@@ -250,4 +262,3 @@ class _CommentsSheetState extends State<CommentsSheet> {
     );
   }
 }
-
