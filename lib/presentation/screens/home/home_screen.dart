@@ -131,7 +131,6 @@ class _HomeScreenState extends State<HomeScreen> {
               setState(() {
                 _currentPage = index;
               });
-              
               // Предзагружаем следующие видео при переключении
               postProvider.preloadNextVideos(index);
             },

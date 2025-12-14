@@ -73,10 +73,8 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
           isPlaying: widget.isCurrentPage,
           onProgressUpdate: _onProgressUpdate,
           onPositionUpdate: (position, duration) {
-            setState(() {
-              _position = position;
-              _duration = duration;
-            });
+            _position = position;
+            _duration = duration;
           },
           onZoomChanged: (isZoomed) {
             setState(() {
@@ -84,9 +82,7 @@ class _VideoFeedItemState extends State<VideoFeedItem> {
             });
           },
           onControllerReady: (controller) {
-            setState(() {
               _videoController = controller;
-            });
           },
         ),
 
